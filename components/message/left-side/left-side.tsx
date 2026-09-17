@@ -10,11 +10,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUserStore } from "@/store/useUserStore";
 import { supabase } from "@/lib/supabase";
 import { AvatarPopover } from "@/components/avatar-popover";
+import { usePresence } from "@/providers/presence-provider";
+
 
 export const LeftSide = () => {
 
     const { user } = useUserStore();
 
+    const { onlineUsers } = usePresence();
+    const isMyUserOnline = user?.id ? !!onlineUsers[user.id] : false;
     const queryClient = useQueryClient();
 
     const { data: conversations, isPending } = useQuery({
@@ -69,7 +73,9 @@ export const LeftSide = () => {
                 <AvatarPopover />
                 <div className="flex flex-col min-w-0 flex-1">
                     <p className="font-medium truncate">{user?.name}</p>
-                    <p className="text-muted-foreground text-xs">Online</p>
+                    <p className={`flex items-center gap-1 text-sm ${isMyUserOnline ? "text-green-500" : "text-zinc-500"}`}>
+                        {isMyUserOnline ? "Online" : "Offline"}
+                    </p>
                 </div>
             </div>
         </div>
