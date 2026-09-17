@@ -3,7 +3,7 @@ import { HeaderMessage } from "@/components/message/right-side/header-message";
 
 export const PageIdMessage = () => {
     return (
-        <div className="h-full w-full dark:bg-zinc-800/30">
+        <div className="h-screen w-full flex flex-col dark:bg-zinc-800/30 overflow-hidden">
             <HeaderMessage />
             <ChatContainer />
         </div>

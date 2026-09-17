@@ -16,7 +16,7 @@ export const LeftSide = () => {
     })
 
     return (
-        <div className="w-[600px] border-r border-border flex flex-col h-screen overflow-hidden">
+        <div className="w-150 border-r border-border flex flex-col h-screen overflow-hidden">
             <HeaderLeftSide />
             <ScrollArea className="h-[calc(100vh-125px)]">
                 {
