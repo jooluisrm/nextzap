@@ -24,34 +24,32 @@ export const CardChatList = ({ conversation }: Props) => {
         <Link href={`/message/${conversation.id}`}>
             <div
                 className={`
-            ${isActive ? "dark:bg-zinc-800" : ""} 
-            flex items-center justify-between p-4 border-b border-border cursor-pointer dark:hover:bg-zinc-800 transition-all 
+            ${isActive ? "dark:bg-zinc-800/30" : ""} 
+            flex items-center justify-between p-3.5 border-b border-border cursor-pointer dark:hover:bg-zinc-800/30 transition-all gap-2
             `}
             >
-                <div className="flex items-center gap-2">
-                    <Avatar className="size-10">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <Avatar className="size-10 shrink-0">
                         <AvatarImage src={""} />
                         <AvatarFallback>
                             {conversation.participants.find((participant) => participant.user.id !== user.id)?.user.name.split(' ').map((n) => n[0]).join('').toUpperCase()}
                         </AvatarFallback>
                     </Avatar>
-                    <div className="flex flex-col w-full">
-                        <p className="text-text-primary w-96 truncate">
+                    <div className="flex flex-col flex-1 min-w-0">
+                        <p className="text-text-primary font-medium truncate">
                             {conversation.participants.find((participant) => participant.user.id !== user.id)?.user.name}
                         </p>
-                        <p className="text-text-secondary text-sm w-96 truncate">
+                        <p className="text-text-secondary text-sm truncate">
                             {conversation.messages && conversation.messages.length > 0 ? conversation.messages[0].content : ""}
                         </p>
                     </div>
                 </div>
-                <div>
-                    <div>
-                        <p className="text-text-secondary text-sm">
-                            {conversation.messages && conversation.messages.length > 0
-                                ? new Date(conversation.messages[0].createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                                : ""}
-                        </p>
-                    </div>
+                <div className="shrink-0 text-right">
+                    <p className="text-text-secondary text-xs">
+                        {conversation.messages && conversation.messages.length > 0
+                            ? new Date(conversation.messages[0].createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                            : ""}
+                    </p>
                 </div>
             </div>
         </Link>

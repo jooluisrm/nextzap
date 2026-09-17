@@ -5,15 +5,24 @@ import { SpeechBubble } from "./speech-bubble";
 import { InputChat } from "./input-chat";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, Loader2, Send } from "lucide-react";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { getMessageByConversationId } from "@/api/message/message";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { getMessageByConversationId, sendMessage } from "@/api/message/message";
 import { useParams } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
 import { useEffect, useRef, useState, useLayoutEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { sendMessageSchema } from "@/schemas/messageSchema";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import z from "zod";
+import { Input } from "@base-ui/react";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 
 export const ChatContainer = () => {
     const { user } = useUserStore();
     const { id: conversationId } = useParams() as { id: string };
+
+    const queryClient = useQueryClient();
 
     const topSentinelRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -114,6 +123,40 @@ export const ChatContainer = () => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    useEffect(() => {
+        if (!conversationId) return;
+        const channel = supabase
+            .channel(`chat:${conversationId}`)
+            .on("broadcast", { event: "new_message" }, ({ payload }) => {
+                // Invalida a query de mensagens para atualizar o chat com a nova mensagem
+                queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+
+                // E rola o chat para o final suavemente
+                setTimeout(scrollToBottomSmooth, 100);
+            })
+            .subscribe();
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [conversationId, queryClient]);
+
+    const onSubmit = async (data: z.infer<typeof sendMessageSchema>) => {
+        const response = await sendMessage(data.content, conversationId);
+
+        if (response.content) {
+            form.reset();
+            scrollToBottomSmooth();
+        }
+    };
+
+    const form = useForm<z.infer<typeof sendMessageSchema>>({
+        resolver: zodResolver(sendMessageSchema),
+        defaultValues: {
+            content: "",
+            conversationId: conversationId,
+        },
+    })
+
     return (
         <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden">
 
@@ -150,15 +193,33 @@ export const ChatContainer = () => {
             )}
 
             <div className="p-3 border-t shrink-0">
-                <div className="flex items-center gap-2">
-                    <InputChat />
+                <form className="flex items-center gap-2 w-full" onSubmit={form.handleSubmit(onSubmit)}>
+                    <div className="flex-1">
+                        <Controller
+                            name="content"
+                            control={form.control}
+                            render={({ field, fieldState }) => (
+                                <Field data-invalid={fieldState.invalid}>
+                                    <Input
+                                        {...field}
+                                        id="content"
+                                        aria-invalid={fieldState.invalid}
+                                        placeholder="Digite uma mensagem"
+                                        autoComplete="off"
+                                        className="rounded-2xl p-3 border w-full"
+                                    />
+                                </Field>
+                            )}
+                        />
+                    </div>
                     <Button
-                        size={"icon"}
-                        className='rounded-full h-12 w-12 shrink-0 cursor-pointer'
+                        size="icon"
+                        className="rounded-full h-12 w-12 shrink-0 cursor-pointer"
+                        type="submit"
                     >
                         <Send className="w-6 h-6" />
                     </Button>
-                </div>
+                </form>
             </div>
         </div>
     );

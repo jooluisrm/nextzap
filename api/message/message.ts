@@ -79,3 +79,15 @@ export const getMessageByConversationId = async ({ conversationId, cursor, limit
         return { messages: [], nextCursor: null };
     }
 }
+
+export const sendMessage = async (content: string, conversationId: string) => {
+    try {
+        const response = await api.post("/message/send", {
+            content,
+            conversationId
+        });
+        return response.data;
+    } catch (error: any) {
+        return { message: error.response.data.message, status: error.response.status };
+    }
+}

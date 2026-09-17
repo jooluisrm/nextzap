@@ -130,4 +130,44 @@ export class MessageService {
             nextCursor
         };
     }
+
+    static async sendMessage(conversationId: string, senderId: string, content: string) {
+
+        const isParticipant = await prisma.conversationParticipant.findUnique({
+            where: {
+                userId_conversationId: {
+                    userId: senderId,
+                    conversationId
+                }
+            }
+        });
+
+        if (!isParticipant) {
+            throw new Error("Acesso negado ou conversa não encontrada");
+        }
+
+        const message = await prisma.message.create({
+            data: {
+                conversationId,
+                senderId,
+                content
+            },
+            include: {
+                sender: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true
+                    }
+                }
+            }
+        });
+
+        await prisma.conversation.update({
+            where: { id: conversationId },
+            data: { updatedAt: new Date() },
+        });
+
+        return message;
+    }
 }

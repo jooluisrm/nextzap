@@ -6,19 +6,42 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useState } from "react";
 import { getConversations, TypeConversation } from "@/api/conversation/conversation";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useUserStore } from "@/store/useUserStore";
+import { supabase } from "@/lib/supabase";
+import { AvatarPopover } from "@/components/avatar-popover";
 
 export const LeftSide = () => {
+
+    const { user } = useUserStore();
+
+    const queryClient = useQueryClient();
 
     const { data: conversations, isPending } = useQuery({
         queryKey: ["conversations"],
         queryFn: () => getConversations(),
-    })
+    });
+
+    useEffect(() => {
+        if (!user?.id) return;
+
+        // Inscreve no canal pessoal do usuário para atualizações da lista de conversas
+        const channel = supabase
+            .channel(`user:${user.id}`)
+            .on("broadcast", { event: "conversation_updated" }, () => {
+                // Atualiza a lista de conversas (reordena e traz novas conversas ou últimas mensagens)
+                queryClient.invalidateQueries({ queryKey: ["conversations"] });
+            })
+            .subscribe();
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id, queryClient]);
 
     return (
-        <div className="w-150 border-r border-border flex flex-col h-screen overflow-hidden">
+        <div className="w-80 md:w-80 lg:w-96 xl:w-105 shrink-0 border-r border-border flex flex-col h-screen overflow-hidden transition-all duration-300">
             <HeaderLeftSide />
-            <ScrollArea className="h-[calc(100vh-125px)]">
+            <ScrollArea className="flex-1 min-h-0">
                 {
                     isPending ? (
                         <div className="flex flex-col">
@@ -42,6 +65,13 @@ export const LeftSide = () => {
                     )
                 }
             </ScrollArea>
+            <div className="h-[75px] p-2 dark:bg-zinc-800/10 border-t border-border flex items-center gap-3 shrink-0">
+                <AvatarPopover />
+                <div className="flex flex-col min-w-0 flex-1">
+                    <p className="font-medium truncate">{user?.name}</p>
+                    <p className="text-muted-foreground text-xs">Online</p>
+                </div>
+            </div>
         </div>
     );
 }
