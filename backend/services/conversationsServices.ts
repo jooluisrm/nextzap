@@ -22,6 +22,7 @@ export class ConversationService {
                                 id: true,
                                 name: true,
                                 email: true,
+                                avatar: true
                             }
                         }
                     }

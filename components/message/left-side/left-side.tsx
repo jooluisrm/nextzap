@@ -9,13 +9,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUserStore } from "@/store/useUserStore";
 import { supabase } from "@/lib/supabase";
-import { AvatarPopover } from "@/components/avatar-popover";
+import { UserAvatar } from "@/components/user-avatar";
 import { usePresence } from "@/providers/presence-provider";
+import { LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { logoutUser } from "@/api/user/user";
+import Link from "next/link";
 
 
 export const LeftSide = () => {
 
-    const { user } = useUserStore();
+    const { user, clearUser } = useUserStore();
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        await logoutUser();
+        clearUser();
+        router.push('/login');
+    }
 
     const { onlineUsers } = usePresence();
     const isMyUserOnline = user?.id ? !!onlineUsers[user.id] : false;
@@ -72,15 +84,30 @@ export const LeftSide = () => {
                     )
                 }
             </ScrollArea>
-            <div className="h-[75px] p-2 dark:bg-zinc-800/10 border-t border-border flex items-center gap-3 shrink-0">
-                <AvatarPopover />
-                <div className="flex flex-col min-w-0 flex-1">
-                    <p className="font-medium truncate">{user?.name}</p>
-                    <p className={`flex items-center gap-1 text-sm ${isMyUserOnline ? "text-green-500" : "text-zinc-500"}`}>
-                        {isMyUserOnline ? "Online" : "Offline"}
-                    </p>
+            <Link
+                href={`/profile/${user?.id}`}
+                className="hover:bg-zinc-800/70 transition-all cursor-pointer"
+            >
+                <div className="h-[75px] p-2 dark:bg-zinc-800/10 border-t border-border flex items-center gap-3 shrink-0">
+                    <UserAvatar />
+                    <div className="flex flex-col min-w-0 flex-1">
+                        <p className="font-medium truncate">{user?.name}</p>
+                        <p className={`flex items-center gap-1 text-sm ${isMyUserOnline ? "text-green-500" : "text-zinc-500"}`}>
+                            {isMyUserOnline ? "Online" : "Offline"}
+                        </p>
+                    </div>
+                    <Button
+                        onClick={() => handleLogout()}
+                        className="cursor-pointer flex items-center gap-2 p-2 hover:bg-red-500/10 hover:text-red-500 rounded-full transition-colors"
+                        title="Sair"
+                        variant={"ghost"}
+                        size="lg"
+                    >
+                        <LogOut className="size-5" />
+                        <span className="sr-only">Sair</span>
+                    </Button>
                 </div>
-            </div>
+            </Link>
         </div>
     );
 }

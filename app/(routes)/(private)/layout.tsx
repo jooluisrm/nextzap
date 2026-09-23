@@ -1,4 +1,4 @@
-import { AvatarPopover } from "@/components/avatar-popover";
+import { AvatarPopover } from "@/components/user-avatar";
 import { LeftSide } from "@/components/message/left-side/left-side";
 import { PresenceProvider } from "@/providers/presence-provider";
 

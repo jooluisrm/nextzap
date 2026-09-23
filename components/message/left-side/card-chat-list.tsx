@@ -9,6 +9,7 @@ import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { cn } from "cn";
+import { UserAvatar } from "@/components/user-avatar";
 
 type Props = {
     conversation: TypeConversation;
@@ -44,12 +45,9 @@ export const CardChatList = ({ conversation }: Props) => {
             `}
             >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <Avatar className="size-10 shrink-0">
-                        <AvatarImage src={""} />
-                        <AvatarFallback>
-                            {conversation.participants.find((participant) => participant.user.id !== user.id)?.user.name.split(' ').map((n) => n[0]).join('').toUpperCase()}
-                        </AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                        conversation={conversation}
+                    />
                     <div className="flex flex-col flex-1 min-w-0">
                         <p className="text-text-primary font-medium truncate">
                             {conversation.participants.find((participant) => participant.user.id !== user.id)?.user.name}

@@ -8,10 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String // Hash da senha para autenticação
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String // Hash da senha para autenticação
+
+  avatar         String? @default("")
+  bio            String? @default("")
+  messageProfile String? @default("") // Breve recado para exibir no perfil
+  address        String? @default("") // Sao Paulo, Brasil
+
   publicKey String? // Opcional por enquanto; usado quando implementar E2EE
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

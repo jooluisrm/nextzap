@@ -29,7 +29,8 @@ export class UserService {
             select: {
                 id: true,
                 name: true,
-                email: true
+                email: true,
+                avatar: true
             }
         })
         return user;

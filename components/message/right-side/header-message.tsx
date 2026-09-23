@@ -1,14 +1,14 @@
 "use client"
 
-import { TypeConversation } from "@/api/conversation/conversation";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getConversations } from "@/api/conversation/conversation";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { UserAvatar } from "@/components/user-avatar";
 import { usePresence } from "@/providers/presence-provider";
-
 import { useUserStore } from "@/store/useUserStore";
-import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, EllipsisVertical, Phone, Search, Video, X } from "lucide-react";
-import Image from "next/image";
+import { useQuery } from "@tanstack/react-query";
+import { EllipsisVertical, X } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
 export const HeaderMessage = () => {
@@ -17,11 +17,12 @@ export const HeaderMessage = () => {
     const router = useRouter();
     const { id: conversationId } = useParams() as { id: string };
 
-    const queryClient = useQueryClient();
+    const { data: conversations, isPending } = useQuery({
+        queryKey: ["conversations"],
+        queryFn: () => getConversations(),
+    });
 
-    const conversation = queryClient.getQueryData<TypeConversation[]>(['conversations']);
-
-    const currentConversation = conversation?.find((conversation) => conversation.id === conversationId);
+    const currentConversation = conversations?.find((conversation) => conversation.id === conversationId);
 
     const otherParticipant = currentConversation?.participants.find(p => p.userId !== user?.id);
 
@@ -33,19 +34,31 @@ export const HeaderMessage = () => {
 
     return (
         <div className="h-16 border-b dark:border-zinc-800 w-full flex items-center justify-between px-2">
-            <div className="flex items-center gap-2">
-                <Avatar className="h-11 w-11">
-                    <AvatarFallback>
-                        {currentConversation?.participants.find((participant) => participant.userId !== user?.id)?.user.name.split(' ').map((n) => n[0]).join('').toUpperCase()}
-                    </AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                    <span className="font-semibold text-base">{otherParticipant?.user.name}</span>
-                    <span className={`flex items-center gap-1 text-sm ${isOnline ? "text-green-500" : "text-zinc-500"}`}>
-                        {isOnline ? "Online" : "Offline"}
-                    </span>
+            {isPending || !user || !currentConversation || !otherParticipant ? (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="w-11 h-11 rounded-full" />
+                    <div className="flex flex-col gap-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-3 w-16" />
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <Link
+                    className="flex items-center gap-2"
+                    href={`/profile/${otherParticipant.userId}`}
+                >
+                    <UserAvatar
+                        conversation={currentConversation}
+                        className="w-11 h-11"
+                    />
+                    <div className="flex flex-col">
+                        <span className="font-semibold text-base">{otherParticipant.user.name}</span>
+                        <span className={`flex items-center gap-1 text-sm ${isOnline ? "text-green-500" : "text-zinc-500"}`}>
+                            {isOnline ? "Online" : "Offline"}
+                        </span>
+                    </div>
+                </Link>
+            )}
             <div className="flex items-center gap-4">
                 <Button
                     onClick={handleCloseChat}

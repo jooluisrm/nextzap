@@ -37,7 +37,6 @@ export const DialogNewChat = () => {
                 return;
             }
             if (response.conversation) {
-                // 🔄 Invalida a query 'conversations' para a sidebar atualizar automaticamente
                 queryClient.invalidateQueries({ queryKey: ["conversations"] });
                 form.reset();
                 router.push(`/message/${response.conversation.id}`);
