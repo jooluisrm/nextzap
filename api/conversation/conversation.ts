@@ -1,3 +1,5 @@
+import { api } from "@/lib/axios";
+
 export type TypeConversation = {
     id: string;
     createdAt: string;
@@ -23,16 +25,28 @@ export type TypeConversation = {
         content: string;
         readAt: string | null;
         createdAt: string;
-    }[]
+    }[],
+    _count: {
+        messages: number;
+    }
 }
 
 export const getConversations = async (): Promise<TypeConversation[] | null> => {
     try {
-        const response = await fetch("/api/conversations");
-        const data = await response.json();
-        return data.conversations;
+        const response = await api.get("/conversations");
+        return response.data.conversations;
     } catch (error) {
         console.log(error);
+        return null;
+    }
+}
+
+export const markMessageAsRead = async (conversationId: string) => {
+    try {
+        const response = await api.patch(`/conversations/${conversationId}/read`);
+        return response.data;
+    } catch (error: any) {
+        console.log(error.response?.data);
         return null;
     }
 }

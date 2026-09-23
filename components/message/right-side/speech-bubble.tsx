@@ -1,11 +1,13 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { CheckCheck } from "lucide-react";
 
 interface SpeechBubbleProps {
     message: string;
     time?: string;
     isOwn?: boolean;
     className?: string;
+    readAt?: string | null;
 }
 
 export const SpeechBubble = ({
@@ -13,9 +15,10 @@ export const SpeechBubble = ({
     time,
     isOwn = false,
     className,
+    readAt,
 }: SpeechBubbleProps) => {
-    return (
 
+    return (
 
         <div className="flex items-center gap-2">
             <div
@@ -33,13 +36,16 @@ export const SpeechBubble = ({
                     {time && (
                         <span
                             className={cn(
-                                "shrink-0 text-[10px]",
+                                "shrink-0 text-[10px] flex items-center gap-2",
                                 isOwn
                                     ? "text-primary-foreground/70"
                                     : "text-muted-foreground"
                             )}
                         >
                             {time}
+                            <div >
+                                {isOwn && (readAt ? <CheckCheck size={14} className="text-blue-500" /> : <CheckCheck size={14} />)}
+                            </div>
                         </span>
                     )}
                 </div>

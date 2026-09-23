@@ -35,6 +35,9 @@ export const LeftSide = () => {
             .on("broadcast", { event: "conversation_updated" }, () => {
                 // Atualiza a lista de conversas (reordena e traz novas conversas ou últimas mensagens)
                 queryClient.invalidateQueries({ queryKey: ["conversations"] });
+            }).on("broadcast", { event: "conversation_read" }, () => {
+                // Invalida a lista de conversas para zerar badge de não lidas / atualizar status
+                queryClient.invalidateQueries({ queryKey: ["conversations"] });
             })
             .subscribe();
         return () => {
