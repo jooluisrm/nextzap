@@ -44,9 +44,12 @@ export const LeftSide = () => {
         // Inscreve no canal pessoal do usuário para atualizações da lista de conversas
         const channel = supabase
             .channel(`user:${user.id}`)
-            .on("broadcast", { event: "conversation_updated" }, () => {
+            .on("broadcast", { event: "conversation_updated" }, ({ payload }) => {
                 // Atualiza a lista de conversas (reordena e traz novas conversas ou últimas mensagens)
                 queryClient.invalidateQueries({ queryKey: ["conversations"] });
+                if (payload?.conversationId) {
+                    queryClient.invalidateQueries({ queryKey: ["messages", payload.conversationId] });
+                }
             }).on("broadcast", { event: "conversation_read" }, () => {
                 // Invalida a lista de conversas para zerar badge de não lidas / atualizar status
                 queryClient.invalidateQueries({ queryKey: ["conversations"] });

@@ -2,12 +2,11 @@
 
 import { createNewContact } from "@/api/message/message";
 import { getProfileUser } from "@/api/profile/profile";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { usePresence } from "@/providers/presence-provider";
 import { useUserStore } from "@/store/useUserStore";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Calendar, CalendarDays, Edit, Edit2, Loader2, Mail, MapPin, MessageCircle, Phone, Pin, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowLeft, Calendar, Loader2, Mail, MapPin, MessageCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { UserAvatar } from "../user-avatar";
 import { SkeletonMainProfile } from "./skeletons-main-profile";
@@ -59,15 +58,18 @@ export const MainProfile = () => {
             <div className="mx-auto flex w-full max-w-5xl flex-col px-4 py-6 sm:px-6 lg:px-8">
                 <header className="flex items-center gap-4 border-b border-border pb-4">
                     <Tooltip>
-                        <TooltipTrigger>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => router.back()}
-                            >
-                                <ArrowLeft className="size-4" />
-                            </Button>
-                        </TooltipTrigger>
+                        <TooltipTrigger
+                            render={
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => router.back()}
+                                >
+                                    <ArrowLeft className="size-4" />
+                                </Button>
+                            }
+                        />
+
                         <TooltipContent>
                             <p>Voltar</p>
                         </TooltipContent>

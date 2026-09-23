@@ -17,13 +17,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import z from "zod";
 import { Input } from "@base-ui/react";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { markMessageAsRead } from "@/api/conversation/conversation";
+import { markMessageAsRead, TypeConversation } from "@/api/conversation/conversation";
 
 export const ChatContainer = () => {
     const { user } = useUserStore();
     const { id: conversationId } = useParams() as { id: string };
 
     const queryClient = useQueryClient();
+
+    const conversationsCache = queryClient.getQueryData<TypeConversation[]>(["conversations"]);
+    const currentConvCache = conversationsCache?.find(c => c.id === conversationId);
+    const unreadCountReal = currentConvCache?._count.messages || 0;
+    
+    // Limite dinâmico para garantir que todas as mensagens não lidas sejam carregadas de uma vez
+    // Traz o total de não lidas + 5 mensagens antigas para contexto. O mínimo é 20.
+    const fetchLimit = Math.max(20, unreadCountReal + 5);
 
     const topSentinelRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -37,7 +45,7 @@ export const ChatContainer = () => {
         queryFn: ({ pageParam }) => getMessageByConversationId({
             conversationId,
             cursor: pageParam,
-            limit: 20
+            limit: fetchLimit
         }),
         initialPageParam: undefined as string | undefined,
         getNextPageParam: (lastPage) => lastPage?.nextCursor ?? undefined,
@@ -80,11 +88,12 @@ export const ChatContainer = () => {
             if (unreadMsgs.length > 0) {
                 initialUnreadInfoRef.current = {
                     firstId: unreadMsgs[0].id,
-                    count: unreadMsgs.length,
+                    // Usa o contador real do backend se existir, senão usa o tamanho do array filtrado
+                    count: unreadCountReal > 0 ? unreadCountReal : unreadMsgs.length,
                 };
             }
         }
-    }, [allMessages, user?.id, hasInitiallyScrolled]);
+    }, [allMessages, user?.id, hasInitiallyScrolled, unreadCountReal]);
 
     // 2. Scroll instantâneo para a mensagem mais recente no carregamento inicial
     useEffect(() => {
@@ -152,17 +161,19 @@ export const ChatContainer = () => {
 
     useEffect(() => {
         if (!conversationId) return;
-
-        markMessageAsRead(conversationId);
-
-    }, [conversationId])
-
-    useEffect(() => {
-        if (!conversationId) return;
         const markRead = () => {
             // Só marca como lida se a janela/aba estiver focada
             if (document.hasFocus()) {
-                markMessageAsRead(conversationId);
+                // Verifica no cache se há mensagens não lidas
+                const conversations = queryClient.getQueryData<TypeConversation[]>(["conversations"]);
+                const currentConv = conversations?.find(c => c.id === conversationId);
+
+                // Se a conversa estiver em cache e não tiver mensagens não lidas, podemos pular a chamada!
+                const hasUnread = currentConv ? currentConv._count.messages > 0 : true;
+
+                if (hasUnread) {
+                    markMessageAsRead(conversationId);
+                }
             }
         };
         markRead();
@@ -171,7 +182,7 @@ export const ChatContainer = () => {
         return () => {
             window.removeEventListener("focus", markRead);
         };
-    }, [conversationId]);
+    }, [conversationId, queryClient]);
 
     useEffect(() => {
         if (!conversationId) return;
@@ -181,16 +192,18 @@ export const ChatContainer = () => {
                 // Invalida a query de mensagens para atualizar o chat com a nova mensagem
                 queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
                 // Se o usuário está com a janela focada/olhando o chat, marca a mensagem nova como lida imediatamente
-                if (document.hasFocus()) {
+                // Mas apenas se a mensagem NÃO foi enviada pelo próprio usuário
+                if (document.hasFocus() && payload.senderId !== user?.id) {
                     markMessageAsRead(conversationId);
                 }
                 // E rola o chat para o final suavemente
                 setTimeout(scrollToBottomSmooth, 100);
             })
             .on("broadcast", { event: "messages_read" }, ({ payload }) => {
-                // Quando a outra pessoa lê as mensagens, atualiza a lista de mensagens (checks azuis) e a lista de conversas
-                queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
-                queryClient.invalidateQueries({ queryKey: ["conversations"] });
+                // Quando a outra pessoa lê as mensagens, atualiza a lista de mensagens (checks azuis)
+                if (payload.readerId !== user?.id) {
+                    queryClient.invalidateQueries({ queryKey: ["messages", conversationId] });
+                }
             })
             .subscribe();
         return () => {
