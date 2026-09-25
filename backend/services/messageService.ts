@@ -46,6 +46,16 @@ export class MessageService {
 
         // Se já existe, apenas abrimos essa conversa! Não cria nada no banco.
         if (existingConversation) {
+            // "Ressuscita" a conversa para o usuário atual, caso estivesse deletada
+            await prisma.conversationParticipant.update({
+                where: {
+                    userId_conversationId: {
+                        userId: currentUserId,
+                        conversationId: existingConversation.id
+                    }
+                },
+                data: { isDeleted: false } // 👈 É isso que faz o histórico "voltar"
+            });
             return existingConversation
         }
 
@@ -166,6 +176,12 @@ export class MessageService {
         await prisma.conversation.update({
             where: { id: conversationId },
             data: { updatedAt: new Date() },
+        });
+
+        // Isso garante que, se alguém tinha excluído/escondido a conversa, ela volte a aparecer.
+        await prisma.conversationParticipant.updateMany({
+            where: { conversationId },
+            data: { isDeleted: false }
         });
 
         return message;

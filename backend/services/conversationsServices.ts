@@ -7,7 +7,8 @@ export class ConversationService {
             where: {
                 participants: {
                     some: {
-                        userId: currentUserId
+                        userId: currentUserId,
+                        isDeleted: false
                     }
                 }
             },
@@ -122,6 +123,37 @@ export class ConversationService {
             readAt: now,
         }
 
+    }
+
+    static async deleteConversation(conversationId: string, currentUserId: string) {
+        // 1. Marca a conversa como "deletada/escondida" apenas para este usuário
+        await prisma.conversationParticipant.update({
+            where: {
+                userId_conversationId: {
+                    userId: currentUserId,
+                    conversationId,
+                },
+            },
+            data: { isDeleted: true },
+        });
+
+        // 2. Verifica se ainda existe algum participante com a conversa "ativa" (isDeleted: false)
+        const activeParticipantsCount = await prisma.conversationParticipant.count({
+            where: {
+                conversationId,
+                isDeleted: false,
+            },
+        });
+
+        // 3. Se deu 0, significa que NINGUÉM mais está vendo essa conversa. Pode apagar do banco!
+        if (activeParticipantsCount === 0) {
+            await prisma.conversation.delete({
+                where: { id: conversationId },
+            });
+            return { deletedForAll: true };
+        }
+
+        return { deletedForAll: false };
     }
 
 

@@ -5,7 +5,7 @@ import { SpeechBubble } from "./speech-bubble";
 import { InputChat } from "./input-chat";
 import { Button } from "@/components/ui/button";
 import { ArrowDown, Loader2, Mic, Paperclip, Send, Smile } from "lucide-react";
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMessageByConversationId, sendMessage } from "@/api/message/message";
 import { useParams } from "next/navigation";
 import { useUserStore } from "@/store/useUserStore";
@@ -564,12 +564,15 @@ export const ChatContainer = () => {
         markCurrentConversationAsRead,
     ]);
 
+    const [isLoading, setIsLoading] = useState(false);
+
     /**
      * Envio de mensagem.
      */
     const onSubmit = async (
         data: z.infer<typeof sendMessageSchema>
     ) => {
+        setIsLoading(true);
         const response = await sendMessage(
             data.content,
             conversationId
@@ -577,6 +580,7 @@ export const ChatContainer = () => {
 
         if (response.content) {
             form.reset();
+            setIsLoading(false);
 
             // Se havia o aviso de mensagens não lidas,
             // ele deixa de ser exibido após enviar uma mensagem.
@@ -893,8 +897,9 @@ export const ChatContainer = () => {
                                 size="icon"
                                 type="submit"
                                 className="rounded-full shrink-0 cursor-pointer h-10 w-10"
+                                disabled={isLoading}
                             >
-                                <Send className="w-8 h-8" />
+                                {isLoading ? <Loader2 className="w-8 h-8 animate-spin" /> : <Send className="w-8 h-8" />}
                             </Button>
                         ) : (
                             <Button

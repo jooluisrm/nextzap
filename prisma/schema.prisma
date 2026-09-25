@@ -41,6 +41,7 @@ model ConversationParticipant {
   conversationId String
   joinedAt       DateTime  @default(now())
   lastReadAt     DateTime? // Registra a última vez que o usuário abriu este chat
+  isDeleted      Boolean   @default(false)
 
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

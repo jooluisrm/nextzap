@@ -51,3 +51,13 @@ export const markMessageAsRead = async (conversationId: string) => {
         return null;
     }
 }
+
+export const clearConversationForUser = async (conversationId: string) => {
+    try {
+        const response = await api.patch(`/conversations/${conversationId}/clear`);
+        return response.data.clearedConversation;
+    } catch (error: any) {
+        console.log(error.response?.data.message);
+        throw new Error(error.response?.data.message);
+    }
+}

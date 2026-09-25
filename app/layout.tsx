@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toast"
 
 const inter = Inter({
   variable: "--font-sans",
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col">
         <TooltipProvider>
           <Providers>{children}</Providers>
+          <Toaster />
         </TooltipProvider>
       </body>
     </html>

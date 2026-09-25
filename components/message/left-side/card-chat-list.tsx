@@ -11,6 +11,32 @@ import { supabase } from "@/lib/supabase";
 import { cn } from "cn";
 import { UserAvatar } from "@/components/user-avatar";
 
+function formatMessageTime(date: Date): string {
+    const now = new Date();
+
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+
+    // Início da semana atual (domingo)
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfToday.getDate() - startOfToday.getDay());
+
+    if (date >= startOfToday) {
+        // Hoje → HH:MM
+        return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    } else if (date >= startOfYesterday) {
+        // Ontem
+        return "Ontem";
+    } else if (date >= startOfWeek) {
+        // Esta semana → nome do dia
+        return date.toLocaleDateString("pt-BR", { weekday: "long" });
+    } else {
+        // Mais antiga → DD/MM/AAAA
+        return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+}
+
 type Props = {
     conversation: TypeConversation;
 }
@@ -54,7 +80,7 @@ export const CardChatList = ({ conversation }: Props) => {
                         </p>
                         <div className="flex items-center gap-2">
                             {isMyMessage && <span className="text-sm text-zinc-500 dark:text-zinc-400">Você: </span>}
-                            <p className="text-text-secondary text-sm truncate">
+                            <p className="dark:text-zinc-400 text-sm truncate">
                                 {conversation.messages && conversation.messages.length > 0 ? conversation.messages[0].content : ""}
                             </p>
                         </div>
@@ -68,9 +94,9 @@ export const CardChatList = ({ conversation }: Props) => {
                             </span>
                         )}
                     </div>
-                    <p className={cn("text-text-secondary text-xs", hasUnreadMessage ? "text-green-500 font-bold" : "")}>
+                    <p className={cn("dark:text-zinc-400 text-xs", hasUnreadMessage ? "text-green-500 font-bold" : "")}>
                         {conversation.messages && conversation.messages.length > 0
-                            ? new Date(conversation.messages[0].createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                            ? formatMessageTime(new Date(conversation.messages[0].createdAt))
                             : ""}
                     </p>
                 </div>
