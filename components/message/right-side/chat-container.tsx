@@ -18,6 +18,10 @@ import z from "zod";
 import { Input } from "@base-ui/react";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { markMessageAsRead, TypeConversation } from "@/api/conversation/conversation";
+import dynamic from "next/dynamic";
+import emojiData from "@emoji-mart/data";
+
+const Picker = dynamic(() => import("@emoji-mart/react"), { ssr: false });
 
 export const ChatContainer = () => {
     const { user } = useUserStore();
@@ -628,6 +632,30 @@ export const ChatContainer = () => {
             }
         );
     }
+
+    const [showPicker, setShowPicker] = useState(false);
+
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const pickerRef = useRef<HTMLDivElement>(null);
+    const emojiButtonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            const target = event.target as Node;
+            if (
+                pickerRef.current &&
+                !pickerRef.current.contains(target) &&
+                emojiButtonRef.current &&
+                !emojiButtonRef.current.contains(target)
+            ) {
+                setShowPicker(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
     return (
         <div className="relative flex flex-col flex-1 min-h-0 overflow-hidden">
 
@@ -768,16 +796,63 @@ export const ChatContainer = () => {
 
                         {/* Emoji */}
                         <Button
+                            ref={emojiButtonRef}
                             type="button"
                             variant="ghost"
                             size="icon"
                             className="shrink-0 rounded-full cursor-pointer h-10 w-10"
                             onClick={() => {
-                                // TODO: abrir seletor de emojis
+                                setShowPicker((prev) => !prev);
                             }}
                         >
                             <Smile className="w-8 h-8" />
                         </Button>
+                        {showPicker && (
+                            <div ref={pickerRef} className="absolute bottom-16 left-0 z-50">
+                                <Picker
+                                    data={emojiData}
+                                    onEmojiSelect={(emoji: any) => {
+                                        const currentContent = form.getValues("content") || "";
+                                        const emojiNative = emoji.native;
+
+                                        if (inputRef.current) {
+                                            const start = inputRef.current.selectionStart || 0;
+                                            const end = inputRef.current.selectionEnd || 0;
+
+                                            const newContent =
+                                                currentContent.slice(0, start) +
+                                                emojiNative +
+                                                currentContent.slice(end);
+
+                                            form.setValue("content", newContent, {
+                                                shouldValidate: true,
+                                                shouldDirty: true
+                                            });
+
+                                            // Foca no input e devolve o cursor logo depois do emoji
+                                            setTimeout(() => {
+                                                if (inputRef.current) {
+                                                    inputRef.current.focus();
+                                                    inputRef.current.setSelectionRange(
+                                                        start + emojiNative.length,
+                                                        start + emojiNative.length
+                                                    );
+                                                }
+                                            }, 0);
+                                        } else {
+                                            form.setValue("content", currentContent + emojiNative, {
+                                                shouldValidate: true,
+                                                shouldDirty: true
+                                            });
+                                        }
+                                    }}
+                                    theme="dark"
+                                    locale="pt"
+                                    style={{ width: "100%" }}
+                                    size={36}
+                                />
+                            </div>
+                        )}
 
                         {/* Input */}
                         <div className="flex-1 min-w-0">
@@ -788,6 +863,10 @@ export const ChatContainer = () => {
                                     <Field data-invalid={fieldState.invalid}>
                                         <Input
                                             {...field}
+                                            ref={(e) => {
+                                                field.ref(e);
+                                                inputRef.current = e as unknown as HTMLInputElement;
+                                            }}
                                             id="content"
                                             aria-invalid={fieldState.invalid}
                                             placeholder="Digite uma mensagem"

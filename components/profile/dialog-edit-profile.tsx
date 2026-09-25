@@ -11,16 +11,20 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { AlertCircle, Edit2, Loader2 } from "lucide-react";
+import { AlertCircle, Edit2, Loader2, Smile } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
 import { UserProfileInput, userProfileSchema } from "@/schemas/profileSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { updateProfileUser } from "@/api/profile/profile";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Textarea } from "../ui/textarea";
 import { UserProfile } from "@/types/type-profile";
 import { useQueryClient } from "@tanstack/react-query";
 import { useUserStore } from "@/store/useUserStore";
+import emojiData from "@emoji-mart/data";
+import dynamic from "next/dynamic";
+
+const Picker = dynamic(() => import("@emoji-mart/react"), { ssr: false });
 
 type Props = {
     profile: UserProfile | null;
@@ -82,6 +86,30 @@ export const DialogEditProfile = ({ profile }: Props) => {
     };
 
     const { isSubmitting, isDirty, errors } = form.formState;
+
+    const [showPicker, setShowPicker] = useState(false);
+
+    const inputRef = useRef<HTMLInputElement | null>(null);
+    const pickerRef = useRef<HTMLDivElement>(null);
+    const emojiButtonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            const target = event.target as Node;
+            if (
+                pickerRef.current &&
+                !pickerRef.current.contains(target) &&
+                emojiButtonRef.current &&
+                !emojiButtonRef.current.contains(target)
+            ) {
+                setShowPicker(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -172,13 +200,78 @@ export const DialogEditProfile = ({ profile }: Props) => {
                         render={({ field, fieldState }) => (
                             <Field data-invalid={fieldState.invalid}>
                                 <FieldLabel htmlFor={field.name}>Recado</FieldLabel>
-                                <Input
-                                    {...field}
-                                    id={field.name}
-                                    aria-invalid={fieldState.invalid}
-                                    placeholder="Deixe um recado..."
-                                    maxLength={30}
-                                />
+
+                                <div className="flex items-center gap-2 relative">
+                                    <Button
+                                        ref={emojiButtonRef}
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="shrink-0 rounded-full cursor-pointer h-10 w-10"
+                                        onClick={() => {
+                                            setShowPicker((prev) => !prev);
+                                        }}
+                                    >
+                                        <Smile className="w-8 h-8" />
+                                    </Button>
+                                    {showPicker && (
+                                        <div ref={pickerRef} className="absolute bottom-16 left-0 z-50">
+                                            <Picker
+                                                data={emojiData}
+                                                onEmojiSelect={(emoji: any) => {
+                                                    const currentContent = form.getValues("messageProfile") || "";
+                                                    const emojiNative = emoji.native;
+
+                                                    if (inputRef.current) {
+                                                        const start = inputRef.current.selectionStart || 0;
+                                                        const end = inputRef.current.selectionEnd || 0;
+
+                                                        const newContent =
+                                                            currentContent.slice(0, start) +
+                                                            emojiNative +
+                                                            currentContent.slice(end);
+
+                                                        form.setValue("messageProfile", newContent, {
+                                                            shouldValidate: true,
+                                                            shouldDirty: true
+                                                        });
+
+                                                        // Foca no input e devolve o cursor logo depois do emoji
+                                                        setTimeout(() => {
+                                                            if (inputRef.current) {
+                                                                inputRef.current.focus();
+                                                                inputRef.current.setSelectionRange(
+                                                                    start + emojiNative.length,
+                                                                    start + emojiNative.length
+                                                                );
+                                                            }
+                                                        }, 0);
+                                                    } else {
+                                                        form.setValue("messageProfile", currentContent + emojiNative, {
+                                                            shouldValidate: true,
+                                                            shouldDirty: true
+                                                        });
+                                                    }
+                                                }}
+                                                theme="dark"
+                                                locale="pt"
+                                                style={{ width: "100%" }}
+                                                size={36}
+                                            />
+                                        </div>
+                                    )}
+                                    <Input
+                                        {...field}
+                                        id={field.name}
+                                        ref={(e) => {
+                                            field.ref(e);
+                                            inputRef.current = e as unknown as HTMLInputElement;
+                                        }}
+                                        aria-invalid={fieldState.invalid}
+                                        placeholder="Deixe um recado..."
+                                        maxLength={30}
+                                    />
+                                </div>
                                 <div className="flex items-center justify-between gap-2">
                                     <FieldDescription>
                                         Uma frase curta que aparecerá no seu perfil.
